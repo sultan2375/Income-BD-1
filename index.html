@@ -1,0 +1,148 @@
+// 🚀 TOKEARN PRO+ (NEXT LEVEL ADMIN PANEL + APK READY VERSION) // React + Firebase Full Earning System (Upgraded)
+
+import { useEffect, useState } from "react"; import { initializeApp } from "firebase/app"; import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth"; import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, getDocs, addDoc } from "firebase/firestore";
+
+// 🔥 FIREBASE CONFIG const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID" };
+
+const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
+
+export default function TokEarnProPlus() {
+
+const [user, setUser] = useState(null); const [coins, setCoins] = useState(0); const [posts, setPosts] = useState([]); const [tab, setTab] = useState("home"); const [isAdmin, setIsAdmin] = useState(false);
+
+useEffect(() => { signInAnonymously(auth);
+
+const unsub = onAuthStateChanged(auth, async (u) => {
+  if (u) {
+    setUser(u);
+
+    const ref = doc(db, "users", u.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        coins: 0,
+        role: "user",
+        createdAt: Date.now()
+      });
+    }
+
+    const data = await getDoc(ref);
+    setIsAdmin(data.data()?.role === "admin");
+
+    loadUser(u.uid);
+    loadPosts();
+  }
+});
+
+return () => unsub();
+
+}, []);
+
+const loadUser = async (uid) => { const snap = await getDoc(doc(db, "users", uid)); if (snap.exists()) setCoins(snap.data().coins); };
+
+const loadPosts = async () => { const snap = await getDocs(collection(db, "posts")); setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))); };
+
+const openAd = async (post) => { window.open(post.adLink, "_blank");
+
+setTimeout(async () => {
+  if (!user) return;
+
+  await updateDoc(doc(db, "users", user.uid), {
+    coins: increment(post.reward || 10)
+  });
+
+  loadUser(user.uid);
+}, 7000);
+
+};
+
+// 🛠 ADMIN: ADD POST const addPost = async () => { await addDoc(collection(db, "posts"), { title: "New Viral Post", adLink: "https://your-adsterra-link.com", reward: 10 }); alert("Post Added"); };
+
+// 🛠 ADMIN: MAKE ADMIN (manual use) const makeAdmin = async () => { if (!user) return; await setDoc(doc(db, "users", user.uid), { role: "admin" }, { merge: true }); alert("You are now admin"); };
+
+return ( <div className="min-h-screen bg-black text-white pb-24">
+
+{/* HEADER */}
+  <div className="p-4 flex justify-between border-b border-white/10">
+    <div>
+      <h1 className="text-xl font-bold">TokEarn PRO+</h1>
+      <p className="text-gray-400 text-sm">Firebase Earning System</p>
+    </div>
+
+    <div className="bg-green-500/20 px-3 py-2 rounded-xl">
+      💰 {coins}
+    </div>
+  </div>
+
+  {/* NAV */}
+  <div className="flex justify-around py-3 text-sm border-b border-white/10">
+    <button onClick={() => setTab("home")}>Home</button>
+    <button onClick={() => setTab("earn")}>Earn</button>
+    <button onClick={() => setTab("admin")}>Admin</button>
+  </div>
+
+  {/* HOME */}
+  {tab === "home" && (
+    <div className="p-4 space-y-4">
+      {posts.map(p => (
+        <div key={p.id} className="bg-white/5 p-4 rounded-xl">
+          <h2>{p.title}</h2>
+          <button onClick={() => openAd(p)} className="w-full mt-3 bg-pink-500 py-2 rounded-xl">
+            Open & Earn
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {/* EARN */}
+  {tab === "earn" && (
+    <div className="p-4">
+      <p>Total Coins: {coins}</p>
+      <p className="text-gray-400 text-sm mt-2">Withdraw system + referral system can be added next</p>
+    </div>
+  )}
+
+  {/* ADMIN PANEL */}
+  {tab === "admin" && isAdmin && (
+    <div className="p-4 space-y-3">
+
+      <h2 className="text-lg font-bold">Admin Panel</h2>
+
+      <button onClick={addPost} className="w-full bg-green-500 py-2 rounded-xl">
+        ➕ Add Dummy Post
+      </button>
+
+      <button onClick={makeAdmin} className="w-full bg-blue-500 py-2 rounded-xl">
+        👑 Make Me Admin
+      </button>
+
+      <p className="text-gray-400 text-xs">
+        Firestore থেকে posts & users manage হবে
+      </p>
+
+    </div>
+  )}
+
+  {/* APK BUILD GUIDE */}
+  {tab === "admin" && (
+    <div className="p-4 text-xs text-gray-400">
+
+      <h3 className="text-white font-bold mb-2">📱 APK বানানোর উপায়</h3>
+
+      <p>1. এই React app build করো</p>
+      <p>2. Netlify/Vercel deploy করো</p>
+      <p>3. তারপর ব্যবহার করো:</p>
+      <p className="text-green-400">webintoapp.com অথবা appsgeyser.com</p>
+
+      <p className="mt-2">
+        অথবা Android Studio দিয়ে WebView app বানাও
+      </p>
+
+    </div>
+  )}
+
+</div>
+
+); }
