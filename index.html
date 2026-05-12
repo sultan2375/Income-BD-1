@@ -1,1 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TokEarn PRO GitHub Ready</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white">
 
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let user = null;
+let coins = 0;
+let posts = [];
+
+const root = document.getElementById("app");
+
+function render(){
+  root.innerHTML = `
+  <div class="p-4">
+    <h1 class="text-2xl font-bold">TokEarn GitHub Ready</h1>
+    <p class="text-green-400 mt-2">Coins: ${coins}</p>
+
+    <div class="mt-5 space-y-4">
+      ${posts.map(p => `
+        <div class="bg-white/10 p-4 rounded-xl">
+          <h2>${p.title}</h2>
+          <button onclick="window.open('${p.adLink}','_blank')" 
+          class="mt-2 bg-pink-500 px-4 py-2 rounded-xl">
+            Open & Earn
+          </button>
+        </div>
+      `).join("")}
+    </div>
+  </div>`;
+}
+
+async function loadPosts(){
+  const snap = await getDocs(collection(db,"posts"));
+  posts = snap.docs.map(d=>d.data());
+  render();
+}
+
+async function loadUser(uid){
+  const ref = doc(db,"users",uid);
+  const snap = await getDoc(ref);
+
+  if(!snap.exists()){
+    await setDoc(ref,{coins:0});
+  }
+  coins = snap.data()?.coins || 0;
+  render();
+}
+
+signInAnonymously(auth);
+
+onAuthStateChanged(auth, async (u)=>{
+  if(u){
+    user = u;
+    await loadUser(u.uid);
+    await loadPosts();
+  }
+});
+
+</script>
+
+</body>
+</html>
